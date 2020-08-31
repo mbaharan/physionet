@@ -12,7 +12,7 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 from physionet_processing import (
-    zero_filter, extend_ts, random_resample, spectrogram, norm_float)
+    zero_filter, extend_ts, random_resample, spectrogram, norm_float, insfreq)
 
 # %% Batch generator class
 
@@ -20,10 +20,8 @@ from physionet_processing import (
 class DataGenerator(Dataset):
     'Generates data for pytorch dataloader'
 
-    def __init__(self, h5file, list_IDs, labels, batch_size=32, dim=(178, 33),
-                 nperseg=64, noverlap=32, data_mean=-9.01, data_std=9.00,
-                 n_channels=1, sequence_length=5736,
-                 n_classes=4, shuffle=True, augment=False):
+    def __init__(self, h5file, list_IDs, labels, batch_size=32,
+                 n_classes=4, shuffle=True):
         'Initialization'
         self.h5file = h5file
         self.list_IDs = list_IDs
@@ -78,14 +76,6 @@ class DataGenerator(Dataset):
             data = extend_ts(
                 self.h5file[ID]['ecgdata'][:, 0], self.sequence_length)
             data = np.reshape(data, (1, len(data)))
-
-            if self.augment:
-
-                # dropout bursts
-                data = zero_filter(data, threshold=2, depth=10)
-
-                # random resampling
-                data = random_resample(data)
 
             # Generate spectrogram
             data_spectrogram = spectrogram(
